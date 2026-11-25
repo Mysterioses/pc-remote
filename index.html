@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#111418">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PC Remote">
+<title>PC Remote</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#111418;--panel:#1b2026;--key:#262c34;--key2:#2f3640;--ink:#eef1f4;--mute:#8b95a1;--accent:#e8251a;--ok:#3ccf8e}
+*{box-sizing:border-box;min-width:0;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Inter Tight",system-ui,sans-serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+main{max-width:440px;margin:0 auto;padding:20px 16px 32px}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+h1{font-size:22px;font-weight:600;margin:0}
+#status{font-size:13px;color:var(--mute);display:flex;align-items:center;gap:6px}
+#dot{width:8px;height:8px;border-radius:50%;background:var(--mute)}
+section{background:var(--panel);border-radius:18px;padding:16px;margin-bottom:14px}
+h2{font-size:13px;font-weight:500;color:var(--mute);margin:0 0 12px}
+.big{font-size:48px;font-weight:600;line-height:1}
+.big small{font-size:18px;color:var(--mute);margin-left:4px}
+input[type=range]{width:100%;margin:16px 0 14px;accent-color:var(--accent);height:32px}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+button{font:inherit;font-weight:500;color:var(--ink);background:var(--key);border:0;border-radius:14px;min-height:56px;padding:8px;cursor:pointer;transition:transform .08s,background .15s}
+button:active{transform:scale(.96);background:var(--key2)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.round{font-size:26px}
+button.danger{color:#ffb4ae}
+button.sent{background:#1f3a2e}
+#setup{display:none}
+#setup input{width:100%;font:inherit;font-size:16px;padding:12px;border-radius:12px;border:0;background:var(--key);color:var(--ink);margin:8px 0}
+#confirm{display:none;margin-top:10px;font-size:14px;color:#ffb4ae}
+p.note{font-size:13px;color:var(--mute);margin:8px 0 0}
+@media(prefers-reduced-motion:reduce){button{transition:none}}
+</style>
+</head>
+<body>
+<main>
+<header><h1>PC Remote</h1><span id="status"><span id="dot"></span><span id="stxt">Ready</span></span></header>
+
+<section id="setup">
+<h2>Connect</h2>
+<p class="note">Open this page with your private link once and it will remember your PC.</p>
+<input id="topic" placeholder="Paste your remote code" autocomplete="off">
+<button id="save" style="width:100%">Save</button>
+</section>
+
+<div id="remote">
+<section>
+<h2>Volume</h2>
+<div class="big"><span id="vout">50</span><small>%</small></div>
+<input type="range" id="vol" min="0" max="100" step="5" value="50" aria-label="Volume">
+<div class="grid">
+<button data-c="voldown" class="round" aria-label="Volume down">&minus;</button>
+<button data-c="mute">Mute</button>
+<button data-c="volup" class="round" aria-label="Volume up">+</button>
+</div>
+</section>
+
+<section>
+<h2>Media</h2>
+<div class="grid">
+<button data-c="prev" aria-label="Previous">&#9198;</button>
+<button data-c="play" aria-label="Play or pause">&#9199;</button>
+<button data-c="next" aria-label="Next">&#9197;</button>
+<button data-c="space">Space</button>
+<button data-c="fullscreen">Full screen</button>
+<button data-c="open:youtube">YouTube</button>
+</div>
+</section>
+
+<section>
+<h2>Open</h2>
+<div class="grid two">
+<button data-c="open:emulator">Emulator</button>
+<button data-c="open:roblox-studio">Roblox Studio</button>
+<button data-c="open:netflix">Netflix</button>
+<button data-c="open:browser">Browser</button>
+</div>
+</section>
+
+<section>
+<h2>Power</h2>
+<div class="grid">
+<button data-c="lock">Lock</button>
+<button data-c="sleep" data-confirm="1">Sleep</button>
+<button data-c="shutdown" data-confirm="1" class="danger">Shut down</button>
+</div>
+<div id="confirm">Tap again to confirm. <button data-c="cancel" style="min-height:40px;margin-left:6px">Cancel shutdown</button></div>
+<p class="note">Shut down waits 30 seconds, so you can still cancel it.</p>
+</section>
+</div>
+</main>
+<script>
+{
+const KEY='pcremote-topic';
+let topic='';
+try{const h=location.hash.slice(1);if(h){localStorage.setItem(KEY,h)}topic=localStorage.getItem(KEY)||''}catch(e){topic=location.hash.slice(1)}
+const setup=document.getElementById('setup'),remote=document.getElementById('remote');
+const dot=document.getElementById('dot'),stxt=document.getElementById('stxt');
+function show(){const ok=!!topic;setup.style.display=ok?'none':'block';remote.style.display=ok?'block':'none'}
+show();
+document.getElementById('save').addEventListener('click',()=>{const v=document.getElementById('topic').value.trim().replace(/^#/,'');if(!v)return;topic=v;try{localStorage.setItem(KEY,v)}catch(e){}show()});
+function status(t,c){stxt.textContent=t;dot.style.background=c}
+async function send(cmd,btn){
+  status('Sending…','#e5b53a');
+  try{
+    const r=await fetch('https://ntfy.sh/'+encodeURIComponent(topic),{method:'POST',body:cmd});
+    if(!r.ok)throw new Error(r.status);
+    status('Sent','var(--ok)');
+    if(btn){btn.classList.add('sent');setTimeout(()=>btn.classList.remove('sent'),400)}
+  }catch(e){status('Not sent, check internet','var(--accent)')}
+}
+let pending=null;const conf=document.getElementById('confirm');
+document.addEventListener('click',e=>{
+  const b=e.target.closest('button[data-c]');if(!b)return;
+  const c=b.dataset.c;
+  if(b.dataset.confirm){
+    if(pending!==c){pending=c;conf.style.display='block';conf.firstChild.textContent='Tap '+b.textContent+' again to confirm. ';setTimeout(()=>{if(pending===c){pending=null}},4000);return}
+    pending=null;
+  }
+  send(c,b);
+});
+const vol=document.getElementById('vol'),vout=document.getElementById('vout');let t;
+vol.addEventListener('input',()=>{vout.textContent=Math.round(vol.value);clearTimeout(t);t=setTimeout(()=>send('vol:'+Math.round(vol.value)),250)});
+}
+</script>
+</body>
+</html>
