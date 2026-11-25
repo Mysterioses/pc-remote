@@ -13,7 +13,7 @@
 <style>
 :root{--bg:#111418;--panel:#1b2026;--key:#262c34;--key2:#2f3640;--ink:#eef1f4;--mute:#8b95a1;--accent:#e8251a;--ok:#3ccf8e}
 *{box-sizing:border-box;min-width:0;-webkit-tap-highlight-color:transparent}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Inter Tight",system-ui,sans-serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Inter Tight",system-ui,sans-serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);-webkit-user-select:none;user-select:none}
 main{max-width:440px;margin:0 auto;padding:20px 16px 32px}
 header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
 h1{font-size:22px;font-weight:600;margin:0}
@@ -25,11 +25,11 @@ h2{font-size:13px;font-weight:500;color:var(--mute);margin:0 0 12px}
 .big small{font-size:18px;color:var(--mute);margin-left:4px}
 input[type=range]{width:100%;margin:16px 0 14px;accent-color:var(--accent);height:32px}
 .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-.grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}
 button{font:inherit;font-weight:500;color:var(--ink);background:var(--key);border:0;border-radius:14px;min-height:56px;padding:8px;cursor:pointer;transition:transform .08s,background .15s}
 button:active{transform:scale(.96);background:var(--key2)}
 button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 button.round{font-size:26px}
+button.play{font-size:28px;background:var(--accent)}
 button.danger{color:#ffb4ae}
 button.sent{background:#1f3a2e}
 #setup{display:none}
@@ -52,6 +52,19 @@ p.note{font-size:13px;color:var(--mute);margin:8px 0 0}
 
 <div id="remote">
 <section>
+<h2>Video</h2>
+<div class="grid">
+<button data-c="back">&laquo; 10s</button>
+<button data-c="play" class="play" aria-label="Play or pause">&#9199;</button>
+<button data-c="forward">10s &raquo;</button>
+<button data-c="fullscreen">Full screen</button>
+<button data-c="next">Next video</button>
+<button data-c="front">Show video</button>
+</div>
+<p class="note">Something covering the video? Tap Show video.</p>
+</section>
+
+<section>
 <h2>Volume</h2>
 <div class="big"><span id="vout">50</span><small>%</small></div>
 <input type="range" id="vol" min="0" max="100" step="5" value="50" aria-label="Volume">
@@ -63,36 +76,14 @@ p.note{font-size:13px;color:var(--mute);margin:8px 0 0}
 </section>
 
 <section>
-<h2>Media</h2>
-<div class="grid">
-<button data-c="prev" aria-label="Previous">&#9198;</button>
-<button data-c="play" aria-label="Play or pause">&#9199;</button>
-<button data-c="next" aria-label="Next">&#9197;</button>
-<button data-c="space">Space</button>
-<button data-c="fullscreen">Full screen</button>
-<button data-c="open:youtube">YouTube</button>
-</div>
-</section>
-
-<section>
-<h2>Open</h2>
-<div class="grid two">
-<button data-c="open:emulator">Emulator</button>
-<button data-c="open:roblox-studio">Roblox Studio</button>
-<button data-c="open:netflix">Netflix</button>
-<button data-c="open:browser">Browser</button>
-</div>
-</section>
-
-<section>
 <h2>Power</h2>
 <div class="grid">
-<button data-c="lock">Lock</button>
 <button data-c="sleep" data-confirm="1">Sleep</button>
 <button data-c="shutdown" data-confirm="1" class="danger">Shut down</button>
+<button data-c="cancel">Cancel</button>
 </div>
-<div id="confirm">Tap again to confirm. <button data-c="cancel" style="min-height:40px;margin-left:6px">Cancel shutdown</button></div>
-<p class="note">Shut down waits 30 seconds, so you can still cancel it.</p>
+<div id="confirm">Tap again to confirm.</div>
+<p class="note">Shut down waits 30 seconds. Tap Cancel to stop it.</p>
 </section>
 </div>
 </main>
@@ -116,13 +107,13 @@ async function send(cmd,btn){
     if(btn){btn.classList.add('sent');setTimeout(()=>btn.classList.remove('sent'),400)}
   }catch(e){status('Not sent, check internet','var(--accent)')}
 }
-let pending=null;const conf=document.getElementById('confirm');
+let pending=null,timer;const conf=document.getElementById('confirm');
 document.addEventListener('click',e=>{
   const b=e.target.closest('button[data-c]');if(!b)return;
   const c=b.dataset.c;
   if(b.dataset.confirm){
-    if(pending!==c){pending=c;conf.style.display='block';conf.firstChild.textContent='Tap '+b.textContent+' again to confirm. ';setTimeout(()=>{if(pending===c){pending=null}},4000);return}
-    pending=null;
+    if(pending!==c){pending=c;conf.textContent='Tap '+b.textContent+' again to confirm.';conf.style.display='block';clearTimeout(timer);timer=setTimeout(()=>{pending=null;conf.style.display='none'},4000);return}
+    pending=null;conf.style.display='none';
   }
   send(c,b);
 });
